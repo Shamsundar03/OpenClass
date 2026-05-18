@@ -728,10 +728,13 @@ class="hidden space-y-3 p-3 border border-white/5 bg-black/20 rounded-xl">
             if (snap.empty) return toast("Address route null", "error");
             const g = snap.docs[0], d = g.data();
             if (d.members.includes(Core.auth.currentUser.uid)) return toast("Roster contains duplicate");
-            if (d.type === 'public') await Core.updateDoc(Core.doc(Core.db, "groups", g.id), { members: Core.arrayUnion(Core.auth.currentUser.uid) });
-            await notifyUser({recipientTeacherId:d.teacherId,type:"Group Join",message:`${profile.name} joined ${d.name}`});
-            else await Core.updateDoc(Core.doc(Core.db, "groups", g.id), { pending: Core.arrayUnion({ uid: Core.auth.currentUser.uid, name: profile.name }) });
-            await notifyUser({recipientTeacherId:d.teacherId,type:"Join Request",message:`${profile.name} requested to join ${d.name}`});
+            if (d.type === 'public') {
+                await Core.updateDoc(Core.doc(Core.db, "groups", g.id), { members: Core.arrayUnion(Core.auth.currentUser.uid) });
+                await notifyUser({recipientTeacherId:d.teacherId,type:"Group Join",message:`${profile.name} joined ${d.name}`});
+            } else {
+                await Core.updateDoc(Core.doc(Core.db, "groups", g.id), { pending: Core.arrayUnion({ uid: Core.auth.currentUser.uid, name: profile.name }) });
+                await notifyUser({recipientTeacherId:d.teacherId,type:"Join Request",message:`${profile.name} requested to join ${d.name}`});
+            }
             toast("Route verification requested"); loadHome();
         };
 
