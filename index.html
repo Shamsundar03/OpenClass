@@ -164,6 +164,7 @@
                     </div>
                     <button onclick="showCart()" class="p-2 glass rounded-xl relative">🛒 <span id="cart-pill" class="hidden absolute -top-1 -right-1 bg-brandOrange text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center">0</span></button>
                     <button onclick="toggleMode()" class="p-2 glass rounded-xl">🌓</button>
+                    <div id="notification-root" class="relative"><button onclick="toggleNotifications(event)" class="p-2 glass rounded-xl relative">🔔<span id="notification-count" class="hidden absolute -top-1 -right-1 bg-red-600 text-white text-[9px] font-black min-w-5 h-5 px-1 rounded-full flex items-center justify-center">0</span></button><div id="notification-panel" class="hidden absolute right-0 top-14 w-80 max-h-96 overflow-y-auto glass rounded-3xl p-4 border border-white/10 shadow-2xl z-[5000]"><h3 class="text-sm font-black mb-3 uppercase text-brandOrange">Notifications</h3><div id="notification-list" class="space-y-3 text-xs font-bold">All caught up 🎉</div></div></div>
                    <div id="nav-profile-pic"
 class="w-10 h-10 rounded-full border-2 overflow-hidden block shrink-0 bg-zinc-700">
     <img
@@ -205,7 +206,7 @@ class="w-10 h-10 rounded-full border-2 overflow-hidden block shrink-0 bg-zinc-70
         import { aiConfig } from "./config.js";
 
         let profile = null, isSignup = false, otpCode = null, tempUser = null, activeGroupId = null, currentTab = 'home', videoPlayer = null;
-        let currentVideoContext = null, watermarkInterval = null, cart = [], groupMessageTrackers = {};
+        let currentVideoContext = null, watermarkInterval = null, cart = [], groupMessageTrackers = {}, notifications = [];
 
         // --- ANTI-THEFT PROTECTION MATRIX ---
         function activateAntiTheftShields() {
@@ -728,7 +729,9 @@ class="hidden space-y-3 p-3 border border-white/5 bg-black/20 rounded-xl">
             const g = snap.docs[0], d = g.data();
             if (d.members.includes(Core.auth.currentUser.uid)) return toast("Roster contains duplicate");
             if (d.type === 'public') await Core.updateDoc(Core.doc(Core.db, "groups", g.id), { members: Core.arrayUnion(Core.auth.currentUser.uid) });
+            await notifyUser({recipientTeacherId:d.teacherId,type:"Group Join",message:`${profile.name} joined ${d.name}`});
             else await Core.updateDoc(Core.doc(Core.db, "groups", g.id), { pending: Core.arrayUnion({ uid: Core.auth.currentUser.uid, name: profile.name }) });
+            await notifyUser({recipientTeacherId:d.teacherId,type:"Join Request",message:`${profile.name} requested to join ${d.name}`});
             toast("Route verification requested"); loadHome();
         };
 
@@ -772,6 +775,7 @@ class="hidden space-y-3 p-3 border border-white/5 bg-black/20 rounded-xl">
 
         window.enrollCourse = async (cid, gid) => {
             await Core.updateDoc(Core.doc(Core.db, "groups", gid), { members: Core.arrayUnion(Core.auth.currentUser.uid) });
+            const cSnap=await Core.getDoc(Core.doc(Core.db,"courses",cid)),c=cSnap.data();await notifyUser({recipientTeacherId:c.teacherId,type:"Course Purchase",message:`${profile.name} purchased ${c.title}`});
             toast("License synced successfully! Roster operation active.");
             document.getElementById('custom-modal').classList.add('hidden');
             setTab('groups');
@@ -978,10 +982,14 @@ document.getElementById('up-end-time').value;
 
         window.handleSub = async (tId, isF) => {
             await Core.updateDoc(Core.doc(Core.db, "users", Core.auth.currentUser.uid), { subs: isF ? Core.arrayRemove(tId) : Core.arrayUnion(tId) });
+            if(!isF)await notifyUser({recipientTeacherId:tId,type:"Follow",message:`${profile.name} started following you`});
             profile.subs = isF ? profile.subs.filter(i => i !== tId) : [...(profile.subs||[]), tId];
             viewTeacher(tId);
         };
-
+            async function notifyUser(d){await Core.addDoc(Core.collection(Core.db,"notifications"),{...d,read:false,createdAt:Core.serverTimestamp()})}
+            function listenNotifications(){let q=profile.role==="teacher"?Core.query(Core.collection(Core.db,"notifications"),Core.where("recipientTeacherId","==",profile.teacherId)):Core.query(Core.collection(Core.db,"notifications"),Core.where("recipientUid","==",Core.auth.currentUser.uid));Core.onSnapshot(q,s=>{notifications=s.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));let unread=notifications.filter(n=>!n.read).length,c=document.getElementById("notification-count"),l=document.getElementById("notification-list");if(!c||!l)return;unread?(c.innerText=unread,c.classList.remove("hidden")):c.classList.add("hidden");l.innerHTML=notifications.length?notifications.map(n=>`<div class="bg-white/5 p-3 rounded-2xl border border-white/5"><p>${n.message}</p><p class="text-[9px] opacity-40 mt-1 uppercase">${n.type}</p></div>`).join(""):"All caught up 🎉";})}
+            window.toggleNotifications=async(e)=>{e.stopPropagation();let p=document.getElementById("notification-panel");p.classList.toggle("hidden");if(!p.classList.contains("hidden"))await Promise.all(notifications.filter(n=>!n.read).map(n=>Core.updateDoc(Core.doc(Core.db,"notifications",n.id),{read:true})))}
+            document.addEventListener("click",e=>{let r=document.getElementById("notification-root"),p=document.getElementById("notification-panel");if(r&&p&&!r.contains(e.target))p.classList.add("hidden")});
         Core.onAuthStateChanged(Core.auth, async (user) => {
             if (user) {
                 const docSnap = await Core.getDoc(Core.doc(Core.db, "users", user.uid));
@@ -993,6 +1001,7 @@ document.getElementById('up-end-time').value;
                     if (pic) pic.className = `w-10 h-10 rounded-full border-2 overflow-hidden hidden md:block ${profile.role === 'teacher' ? 'border-brandBlue' : 'border-brandOrange'}`;
                     showScreen('dashboard'); navigate(window.location.hash.substring(1) || 'home');
                     listenUnreadNotifications();
+                    listenNotifications();
                 }
             } else showScreen('auth-screen');
         });
