@@ -241,6 +241,9 @@
             background: #0b0b0b;
             border-left: 1px solid rgba(255, 255, 255, 0.05);
         }
+        #live-classroom-chat-container.hidden {
+            display: none !important;
+        }
 
         @keyframes popUp {
             from {
@@ -604,6 +607,16 @@
             }
 
             window._disengageShields = () => {
+                // Force hide the live chat container when video ends/closes
+                const liveChatContainer = document.getElementById('live-classroom-chat-container');
+                if (liveChatContainer) {
+                    liveChatContainer.classList.add('hidden');
+                }
+                const chatTarget = document.getElementById('live-chat-messages-target');
+                if (chatTarget) {
+                    chatTarget.innerHTML = '';
+                }
+            
                 window.removeEventListener('blur', engageShield);
                 document.removeEventListener('visibilitychange', handleVisibility);
                 clearInterval(watermarkInterval);
