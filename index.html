@@ -1681,17 +1681,17 @@
             viewTeacher(tId);
         };
 
-        Core.onAuthStateChanged(Core.auth, async (user) => {
-            if (user) {
-                const docSnap = await Core.getDoc(Core.doc(Core.db, "users", user.uid));
-                if (!docSnap.exists()) showScreen('onboarding-screen');
-                else {
-                    profile = docSnap.data();
+            Core.onAuthStateChanged(Core.auth, async (user) => {
+                if (user) {
+                    const docSnap = await Core.getDoc(Core.doc(Core.db, "users", user.uid));
+                    if (!docSnap.exists()) showScreen('onboarding-screen');
+                    else {
+                        profile = docSnap.data();
                     
-                    if (profile.role === "super_admin") {
-                        const adminBtn = document.getElementById("admin-panel-btn");
-                        if (adminBtn) adminBtn.classList.remove("hidden");
-                    }
+                     //      if (profile.role === "super_admin") {
+                    //   const adminBtn = document.getElementById("admin-panel-btn");
+                   //     if (adminBtn) adminBtn.classList.remove("hidden");
+                   //     }
 
                     const pic = document.getElementById('nav-profile-pic');
                     if (pic) {
