@@ -1,4 +1,3 @@
-// OpenClass Security Configuration
 export const firebaseConfig = {
     apiKey: "AIzaSyAAtk7rWxT7VFKA6J1UVHicHSakceMc4TA",
     authDomain: "openclass-565ca.firebaseapp.com",
@@ -15,6 +14,12 @@ export const emailConfig = {
     publicKey: "P88qoYcr5CHYVNAPw"
 };
 
-export const aiConfig = {
-    geminiKey: "AIzaSyCcHUvzU3TiORjiu7YgXU41I87L2GPrStk"
+export const customAiConfig = {
+    // IMPORTANT AI CORS WARNING:
+    // If you see a CORS error in the console, your Ngrok URL backend below must allow CORS.
+    // The browser physically blocks HTTP calls from `firebaseapp.com` to `ngrok-free.app`
+    // unless the ngrok-free.app server returns the header: `Access-Control-Allow-Origin: *`.
+    backendUrl: "https://dance-peroxide-tinfoil.ngrok-free.dev", 
+    projectKey: "my_super_secure_secret_agent_key_123",
+    groqKey: "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" 
 };
