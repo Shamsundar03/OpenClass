@@ -1502,12 +1502,6 @@
             }
 
             await Core.addDoc(Core.collection(Core.db, "content"), payload);
-            
-            if(y === 'live') {
-                pushSystemNotification("LIVE LECTURE", `Scheduled: "${t}" on ${payload.liveDate} at ${payload.liveStartTime}.`);
-            } else {
-                pushSystemNotification("MATERIAL", `Asset sync: "${t}" published.`);
-            }
             toast("Resource published successfully"); loadHome();
         };
 
@@ -1735,7 +1729,8 @@
                     snap.docChanges().forEach(change => {
                         if (change.type === "added") {
                             const data = change.doc.data();
-                            const docTimestamp = data.date ? data.date.toMillis() : 0;
+                            // Fallback to Date.now() if server timestamp is pending local resolution
+                            const docTimestamp = data.date ? data.date.toMillis() : Date.now();
                             if (docTimestamp > window.appLoadTime && profile.subs.includes(data.tId)) {
                                 pushSystemNotification("NEW SYLLABUS", `${data.tName} published ${data.title}`);
                             }
