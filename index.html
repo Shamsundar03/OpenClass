@@ -1463,7 +1463,7 @@
             const container = document.getElementById('courses-feed') || document.getElementById('tab-display');
             if (container) container.innerHTML = `<div class="grid md:grid-cols-2 gap-6 w-full">${docs.map(doc => {
                 const c = doc.data();
-                return `<div class="glass p-5 rounded-[2.5rem] border border-white/5 flex flex-col justify-between h-auto shadow-md hover:border-brandOrange/30 transition-colors"><div class="w-full flex items-center justify-center overflow-hidden rounded-2xl mb-5 bg-zinc-950/40 aspect-video shadow-inner"><img src="${c.thumbnail}" class="w-full h-full object-cover border border-white/5 hover:scale-105 transition-transform duration-500"></div><div><h2 class="text-xl font-black italic mb-2 truncate pr-4 text-white/90">${c.title}</h2><div class="flex justify-between items-center mt-5"><h3 class="text-lg font-black text-brandOrange drop-shadow-md">₹${c.price === '0' ? 'FREE' : c.price}</h3><button onclick="openCourse('${doc.id}')" class="btn-brand px-6 py-2.5 text-[10px] shadow-sm hover:shadow-brandOrange/40">Inspect</button></div></div></div>`;
+                return `<div class="glass p-5 rounded-[2.5rem] border border-white/5 flex flex-col justify-between h-auto shadow-md hover:border-brandOrange/30 transition-colors"><div class="w-full flex items-center justify-center overflow-hidden rounded-2xl mb-5 bg-zinc-950/40 aspect-video shadow-inner"><img src="${c.thumbnail}" class="w-full h-full object-cover border border-white/5 hover:scale-105 transition-transform duration-500"></div><div><h2 class="text-xl font-black italic mb-2 truncate pr-4 text-zinc-900 dark:text-white/90">${c.title}</h2><div class="flex justify-between items-center mt-5"><h3 class="text-lg font-black text-brandOrange drop-shadow-md">₹${c.price === '0' ? 'FREE' : c.price}</h3><button onclick="openCourse('${doc.id}')" class="btn-brand px-6 py-2.5 text-[10px] shadow-sm hover:shadow-brandOrange/40">Inspect</button></div></div></div>`;
             }).join('')}</div>`;
         }
 
@@ -1482,7 +1482,7 @@
                 }
             }
 
-            return `<div class="glass p-5 md:p-6 rounded-[2.5rem] flex flex-col md:flex-row justify-between items-center group shadow-md hover:shadow-xl transition-all gap-6 border border-white/5 hover:border-brandBlue/30"><div class="flex items-center gap-5 md:gap-6 w-full md:w-auto"><div class="relative flex-shrink-0 self-start md:self-center overflow-hidden rounded-2xl border border-white/10 shadow-lg"><img src="${window.getSmartPreview(i.url)}" class="w-32 h-20 md:w-36 md:h-24 object-cover bg-brandBlue group-hover:scale-110 transition-transform duration-500">${window.getFileBadge(i.url)}</div><div class="overflow-hidden flex flex-col justify-center"><h4 class="font-black text-lg md:text-xl italic truncate max-w-[200px] md:max-w-md pr-4 text-white/90 drop-shadow-md mb-1">${i.title}</h4> ${liveStatusLabel}<p class="text-[9px] opacity-50 uppercase font-bold tracking-widest mt-1 pr-4 font-mono">${i.tName} • ${i.views || 0} Views</p></div></div><div class="flex gap-2 w-full md:w-auto justify-end"><button onclick="openResource('${d.id}','${i.url}','${i.title}')" class="flex-grow md:flex-none btn-brand px-10 py-3.5 rounded-2xl font-black text-[10px] uppercase shadow-md hover:shadow-brandBlue/40">Access Core</button>${isT ? `<button onclick="editR('${d.id}','${i.title}','${i.url}')" class="p-3 bg-zinc-800 text-white rounded-xl hover:text-brandBlue hover:bg-white/10 transition-colors border border-white/5 shadow-sm">✎</button><button onclick="delR('${d.id}')" class="p-3 bg-zinc-800 text-white rounded-xl hover:text-red-500 hover:bg-red-500/10 transition-colors border border-white/5 shadow-sm">🗑</button>` : ''}</div></div>`;
+        return `<div class="glass p-5 md:p-6 rounded-[2.5rem] flex flex-col md:flex-row justify-between items-center group shadow-md hover:shadow-xl transition-all gap-6 border border-white/5 hover:border-brandBlue/30"><div class="flex items-center gap-5 md:gap-6 w-full md:w-auto"><div class="relative flex-shrink-0 self-start md:self-center overflow-hidden rounded-2xl border border-white/10 shadow-lg"><img src="${window.getSmartPreview(i.url)}" class="w-32 h-20 md:w-36 md:h-24 object-cover bg-brandBlue group-hover:scale-110 transition-transform duration-500">${window.getFileBadge(i.url)}</div><div class="overflow-hidden flex flex-col justify-center"><h4 class="font-black text-lg md:text-xl italic truncate max-w-[200px] md:max-w-md pr-4 text-zinc-900 dark:text-white/90 drop-shadow-md mb-1">${i.title}</h4> ${liveStatusLabel}<p class="text-[9px] opacity-50 uppercase font-bold tracking-widest mt-1 pr-4 font-mono">${i.tName} • ${i.views || 0} Views</p></div></div><div class="flex gap-2 w-full md:w-auto justify-end"><button onclick="openResource('${d.id}','${i.url}','${i.title}')" class="flex-grow md:flex-none btn-brand px-10 py-3.5 rounded-2xl font-black text-[10px] uppercase shadow-md hover:shadow-brandBlue/40">Access Core</button>${isT ? `<button onclick="editR('${d.id}','${i.title}','${i.url}')" class="p-3 bg-zinc-800 text-white rounded-xl hover:text-brandBlue hover:bg-white/10 transition-colors border border-white/5 shadow-sm">✎</button><button onclick="delR('${d.id}')" class="p-3 bg-zinc-800 text-white rounded-xl hover:text-red-500 hover:bg-red-500/10 transition-colors border border-white/5 shadow-sm">🗑</button>` : ''}</div></div>`;
         }
         
         window.delR = async (id) => { if(confirm("Confirm asset removal?")) { await Core.deleteDoc(Core.doc(Core.db,"content",id)); loadHome(); } };
@@ -1773,8 +1773,9 @@
             loadGroups(); 
         };
         window.toggleMode = () => { 
-            document.documentElement.classList.toggle('light'); 
-            localStorage.setItem('oc_theme', document.documentElement.classList.contains('light')); 
+            const isLight = document.documentElement.classList.toggle('light'); 
+            document.documentElement.classList.toggle('dark', !isLight);
+            localStorage.setItem('oc_theme', isLight); 
         };
         window.closeCustomModal = () => {
             document.getElementById('custom-modal').classList.add('hidden');
@@ -1811,8 +1812,10 @@
 
         function showScreen(id) { ['auth-screen', 'verify-screen', 'onboarding-screen', 'dashboard'].forEach(s => document.getElementById(s).classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
         function toast(m, type = "s") { const b = document.getElementById('toast-box'), d = document.createElement('div'); d.className = 'toast-pill'; if (type === "error") d.style.borderColor = "#ff4444"; d.innerText = m; b.appendChild(d); setTimeout(() => d.remove(), 2500); }
-        if (localStorage.getItem('oc_theme') === 'true') document.documentElement.classList.add('light');
-
+        if (localStorage.getItem('oc_theme') === 'true') {
+        document.documentElement.classList.add('light');
+        document.documentElement.classList.remove('dark');
+    }
         async function loadGroups() {
             const container = document.getElementById('student-groups'); if (!container) return;
             injectSkeletonState('student-groups');
