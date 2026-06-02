@@ -1730,17 +1730,21 @@
 
             if(profile.role === 'student' && profile.subs && profile.subs.length > 0) {
                 const contentQuery = Core.query(Core.collection(Core.db, "content"), Core.orderBy("date", "desc"), Core.limit(10));
+                let isInitialLoad = true;
+                
                 Core.onSnapshot(contentQuery, (snap) => {
-                    snap.docChanges().forEach(change => {
-                        if (change.type === "added") {
-                            const data = change.doc.data();
-                            // Fallback to Date.now() if server timestamp is pending local resolution
-                            const docTimestamp = data.date ? data.date.toMillis() : Date.now();
-                            if (docTimestamp > window.appLoadTime && profile.subs.includes(data.tId)) {
-                                pushSystemNotification("NEW SYLLABUS", `${data.tName} published ${data.title}`);
+                    if (!isInitialLoad) {
+                        snap.docChanges().forEach(change => {
+                            if (change.type === "added") {
+                                const data = change.doc.data();
+                                // Send notification only if student is following this teacher
+                                if (profile.subs.includes(data.tId)) {
+                                    pushSystemNotification("NEW SYLLABUS", `${data.tName} published ${data.title}`);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
+                    isInitialLoad = false;
                 });
             }
         }
