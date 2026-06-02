@@ -591,6 +591,9 @@
             toggleBottomNavBarVisibility(false);
             modal.classList.remove('hidden');
             
+            // Calculate real-time color mapping based on profile credentials role tracking
+            const modalAvatarClass = profile.role === "super_admin" ? "border-red-600 shadow-red-600/20" : "border-brandOrange shadow-brandOrange/20";
+
             // Generate the admin button layout cleanly without nesting backticks
             const adminButtonHtml = profile.role === "super_admin" ? 
                 '<div class="mt-4 border-t border-white/5 pt-4"><button onclick="closeCustomModal(); document.getElementById(\'admin-dashboard\').classList.remove(\'hidden\'); window.showSection(\'plans-section\');" class="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-black rounded-2xl uppercase tracking-widest text-[10px] shadow-[0_10px_30px_rgba(255,0,0,0.3)] transition-all">Admin Panel</button></div>' : '';
@@ -607,7 +610,7 @@
                         <div class="bg-zinc-900/60 border border-white/5 rounded-3xl p-6 shadow-inner">
                             <div class="flex flex-col items-center">
                                 <div class="relative group">
-                                    <img id="profile-hub-preview" src="${window._tempHubAvatarBuffer || profile.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=ff6b00&color=fff&size=256`}" class="w-32 h-32 rounded-full object-cover border-4 border-brandOrange shadow-2xl shadow-brandOrange/20 bg-black">
+                                    <img id="profile-hub-preview" src="${window._tempHubAvatarBuffer || profile.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=ff6b00&color=fff&size=256`}" class="w-32 h-32 rounded-full object-cover border-4 ${modalAvatarClass} shadow-2xl bg-black">
                                     <div class="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
                                         <label class="cursor-pointer flex flex-col items-center gap-1">
                                             <div class="w-12 h-12 rounded-full bg-brandOrange flex items-center justify-center text-xl">✏️</div>
