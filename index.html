@@ -1728,7 +1728,7 @@
                 });
             });
 
-            if(profile.role === 'student' && profile.subs && profile.subs.length > 0) {
+            if(profile.role === 'student') {
                 const contentQuery = Core.query(Core.collection(Core.db, "content"), Core.orderBy("date", "desc"), Core.limit(10));
                 let isInitialLoad = true;
                 
@@ -1737,10 +1737,8 @@
                         snap.docChanges().forEach(change => {
                             if (change.type === "added") {
                                 const data = change.doc.data();
-                                // Send notification only if student is following this teacher
-                                if (profile.subs.includes(data.tId)) {
-                                    pushSystemNotification("NEW SYLLABUS", `${data.tName} published ${data.title}`);
-                                }
+                                // Trigger alert globally for any new campus syllabus injection
+                                pushSystemNotification("NEW SYLLABUS", `${data.tName} published ${data.title}`);
                             }
                         });
                     }
