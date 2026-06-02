@@ -1027,11 +1027,15 @@
                 const contentSorted = contentSnap.docs.sort((a,b) => (b.data().date?.seconds || 0) - (a.data().date?.seconds || 0));
                 const coursesSorted = courseSnap.docs.sort((a,b) => (b.data().createdAt?.seconds || 0) - (a.data().createdAt?.seconds || 0));
 
+                // Determine border dynamically for the left sidebar profile card
+                const sidebarBorderColor = profile.role === 'super_admin' ? 'border-red-600' : 'border-brandBlue';
+
                 main.innerHTML = `
                 <div class="grid lg:grid-cols-4 gap-10">
                     <div class="space-y-6 lg:sticky lg:top-32 h-fit">
                         <div class="glass p-8 rounded-[3rem] border border-brandBlue/30 text-center shadow-xl">
-                            <img src="${profile.photo || 'https://ui-avatars.com/api/?name='+profile.name}" class="w-24 h-24 mx-auto mb-4 rounded-full border-4 border-brandBlue p-1 object-cover bg-black shadow-lg">
+                            <img src="${profile.photo || 'https://ui-avatars.com/api/?name='+profile.name}" class="w-24 h-24 mx-auto mb-4 rounded-full border-4 ${sidebarBorderColor} p-1 object-cover bg-black shadow-lg">
+                            
                             <h3 class="text-xl font-black italic pr-4">${profile.name}</h3>
                             <p class="text-[10px] font-bold opacity-40 uppercase tracking-widest mb-6">${profile.teacherId}</p>
                             <div class="grid grid-cols-2 gap-4">
@@ -1663,11 +1667,14 @@
             const contentSorted = cS.docs.sort((a,b) => (b.data().date?.seconds || 0) - (a.data().date?.seconds || 0));
             const coursesSorted = coS.docs.sort((a,b) => (b.data().createdAt?.seconds || 0) - (a.data().createdAt?.seconds || 0));
 
+            // Dynamic rule check for public instructor card rendering profiles
+            const publicCardBorderColor = tD.role === 'super_admin' ? 'border-red-600' : 'border-brandBlue';
+
             main.innerHTML = `<div class="space-y-10">
                 <div class="glass p-6 md:p-10 rounded-[4rem] border border-brandBlue/30 flex flex-col md:flex-row justify-between items-center gap-6 shadow-2xl relative overflow-hidden">
                     <div class="absolute -right-20 -top-20 w-64 h-64 bg-brandBlue/10 blur-3xl rounded-full pointer-events-none"></div>
                     <div class="flex items-center gap-6 md:gap-8 relative z-10">
-                        <img src="${tD.photo || 'https://ui-avatars.com/api/?name='+tD.name}" class="w-20 h-20 md:w-28 md:h-28 rounded-full border-[5px] border-brandBlue object-cover bg-black shadow-2xl">
+                        <img src="${tD.photo || 'https://ui-avatars.com/api/?name='+tD.name}" class="w-20 h-20 md:w-28 md:h-28 rounded-full border-[5px] ${publicCardBorderColor} object-cover bg-black shadow-2xl">
                         <div>
                             <h2 class="text-3xl md:text-5xl font-black italic tracking-tighter pr-4 drop-shadow-md text-white/95">${tD.name}</h2>
                             <p class="text-[10px] md:text-xs font-bold text-brandBlue uppercase tracking-widest mt-1 pr-4 font-mono shadow-sm p-1.5 bg-brandBlue/10 border border-brandBlue/20 rounded-lg w-fit inline-block">${tD.teacherId}</p>
