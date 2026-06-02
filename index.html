@@ -1700,11 +1700,12 @@
                         if (adminBtn) adminBtn.classList.remove("hidden");
                     } */
 
-                    const pic = document.getElementById('nav-profile-pic');
+                   const pic = document.getElementById('nav-profile-pic');
                     if (pic) {
                         pic.innerHTML = `<img src="${profile.photo || 'https://ui-avatars.com/api/?name='+profile.name}" class="w-full h-full object-cover bg-black">`;
-                        const borderTheme = profile.role === 'super_admin' ? 'border-red-600' : (profile.role === 'teacher' ? 'border-brandBlue' : 'border-brandOrange');
-                        pic.className = `w-9 h-9 md:w-10 md:h-10 rounded-full border-[3px] overflow-hidden cursor-pointer block select-none hover:scale-105 transition-transform shadow-lg ${borderTheme}`;
+                        // Dynamically route text/border utilities based on administrative security clearance profiles
+                        const borderColor = profile.role === 'super_admin' ? 'border-red-600' : (profile.role === 'teacher' ? 'border-brandBlue' : 'border-brandOrange');
+                        pic.className = `w-9 h-9 md:w-10 md:h-10 rounded-full border-[3px] overflow-hidden cursor-pointer block select-none hover:scale-105 transition-transform shadow-lg ${borderColor}`;
                     }
                     showScreen('dashboard'); navigate(window.location.hash.substring(1) || 'home');
                     listenSystemEvents(); 
