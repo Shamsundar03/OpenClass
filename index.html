@@ -1712,7 +1712,7 @@
             } else showScreen('auth-screen');
         });
         
-        function listenSystemEvents() {
+       function listenSystemEvents() {
             Core.onSnapshot(Core.collection(Core.db, "groupMessages"), (snap) => {
                 if(document.getElementById('group-chat-window').classList.contains('hidden') === false) {
                     if(activeGroupId) groupMessageTrackers[activeGroupId] = 0;
@@ -1728,21 +1728,31 @@
                 });
             });
 
-            if(profile.role === 'student') {
+            // Gated rule: Only execute notification tracking channels for students
+            if (profile.role === 'student') {
                 const contentQuery = Core.query(Core.collection(Core.db, "content"), Core.orderBy("date", "desc"), Core.limit(10));
-                let isInitialLoad = true;
+                let seenContentIds = null;
                 
                 Core.onSnapshot(contentQuery, (snap) => {
-                    if (!isInitialLoad) {
-                        snap.docChanges().forEach(change => {
-                            if (change.type === "added") {
-                                const data = change.doc.data();
-                                // Trigger alert globally for any new campus syllabus injection
+                    // Step 1: Initial load mapping. Saves pre-existing lessons to ignore history
+                    if (seenContentIds === null) {
+                        seenContentIds = new Set();
+                        snap.docs.forEach(doc => seenContentIds.add(doc.id));
+                        return; 
+                    }
+                    
+                    // Step 2: Live stream processing for new documents added while online
+                    snap.docChanges().forEach(change => {
+                        if (change.type === "added" && !seenContentIds.has(change.doc.id)) {
+                            seenContentIds.add(change.doc.id);
+                            const data = change.doc.data();
+                            
+                            // Condition: Check if the student explicitly follows the uploading teacher
+                            if (profile.subs && profile.subs.includes(data.tId)) {
                                 pushSystemNotification("NEW SYLLABUS", `${data.tName} published ${data.title}`);
                             }
-                        });
-                    }
-                    isInitialLoad = false;
+                        }
+                    });
                 });
             }
         }
