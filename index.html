@@ -571,23 +571,21 @@
             }
         }
 
-        window.getFileBadge = (url) => {
+       window.getFileBadge = (url) => {
             if (!url) return '';
             const clean = url.toLowerCase().trim();
             let badgeText = "FILE";
-            let color = "bg-zinc-700 text-white";
             
-            if (clean.includes('.pdf')) { badgeText = "PDF"; color = "bg-red-600 text-white"; }
-            else if (clean.match(/\.(mp4|webm|ogg|mov|avi)/) || clean.includes('youtube.com') || clean.includes('youtu.be')) { badgeText = "VIDEO"; color = "bg-brandBlue text-white"; }
+            if (clean.includes('.pdf')) { badgeText = "PDF"; }
+            else if (clean.match(/\.(mp4|webm|ogg|mov|avi)/) || clean.includes('youtube.com') || clean.includes('youtu.be')) { badgeText = "VIDEO"; }
             else if (clean.match(/\.(jpeg|jpg|gif|png|webp|svg)/)) { badgeText = "IMG"; }
             else if (clean.includes('firebasestorage')) { badgeText = "CLOUD"; }
-    
+            
             // Uses clean adaptive text colors identical to your titles
             const badgeStyle = "bg-zinc-500/10 text-zinc-900 dark:text-white/90 border-zinc-500/20";
             
-            return `<span class="absolute bottom-2 right-2 ${color} text-[8px] font-black tracking-widest px-2.5 py-1 rounded-lg shadow-lg uppercase border border-white/10 z-10">${badgeText}</span>`;
+            return `<span class="absolute bottom-2 right-2 ${badgeStyle} text-[8px] font-black tracking-widest px-2.5 py-1 rounded-lg shadow-lg uppercase border z-10">${badgeText}</span>`;
         };
-
         window.showProfileSettings = () => {
             const modal = document.getElementById('custom-modal');
             const content = document.getElementById('modal-content');
