@@ -579,8 +579,11 @@
             
             if (clean.includes('.pdf')) { badgeText = "PDF"; color = "bg-red-600 text-white"; }
             else if (clean.match(/\.(mp4|webm|ogg|mov|avi)/) || clean.includes('youtube.com') || clean.includes('youtu.be')) { badgeText = "VIDEO"; color = "bg-brandBlue text-white"; }
-            else if (clean.match(/\.(jpeg|jpg|gif|png|webp|svg)/)) { badgeText = "IMG"; color = "bg-green-600 text-white"; }
-            else if (clean.includes('firebasestorage')) { badgeText = "CLOUD"; color = "bg-purple-600 text-white"; }
+            else if (clean.match(/\.(jpeg|jpg|gif|png|webp|svg)/)) { badgeText = "IMG"; }
+            else if (clean.includes('firebasestorage')) { badgeText = "CLOUD"; }
+    
+            // Uses clean adaptive text colors identical to your titles
+            const badgeStyle = "bg-zinc-500/10 text-zinc-900 dark:text-white/90 border-zinc-500/20";
             
             return `<span class="absolute bottom-2 right-2 ${color} text-[8px] font-black tracking-widest px-2.5 py-1 rounded-lg shadow-lg uppercase border border-white/10 z-10">${badgeText}</span>`;
         };
@@ -1486,14 +1489,18 @@
             const i = d.data();
             let liveStatusLabel = '';
             
-            if (i.type === 'live') {
+           if (i.type === 'live') {
                 const status = window.checkLiveStatus(i.liveDate, i.liveStartTime, i.liveEndTime);
+                
+                // Mapped directly to layout style colors matching the asset titles
+                const neutralLabelBase = "inline-flex items-center gap-1.5 bg-zinc-500/10 text-zinc-900 dark:text-white/90 text-[8px] font-black tracking-widest px-2.5 py-1 rounded-full border border-zinc-500/20 shadow-sm mt-1 mb-1 w-fit";
+            
                 if (status === 'scheduled') {
-                    liveStatusLabel = `<span class="inline-flex items-center gap-1.5 bg-blue-600/20 text-blue-400 text-[8px] font-black tracking-widest px-2.5 py-1 rounded-full border border-blue-500/20 shadow-sm mt-1 mb-1 w-fit">SCHEDULED: ${i.liveStartTime}</span>`;
+                    liveStatusLabel = `<span class="${neutralLabelBase}">SCHEDULED: ${i.liveStartTime}</span>`;
                 } else if (status === 'live') {
-                    liveStatusLabel = `<span class="inline-flex items-center gap-1.5 bg-red-600/20 text-red-500 text-[8px] font-black tracking-widest px-2.5 py-1 rounded-full border border-red-500/20 shadow-sm mt-1 mb-1 w-fit"><span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_red]"></span>LIVE NOW</span>`;
+                    liveStatusLabel = `<span class="${neutralLabelBase}"><span class="w-1.5 h-1.5 rounded-full bg-zinc-900 dark:bg-white animate-pulse"></span>LIVE NOW</span>`;
                 } else {
-                    liveStatusLabel = `<span class="inline-flex items-center gap-1.5 bg-brandOrange/20 text-brandOrange text-[8px] font-black tracking-widest px-2.5 py-1 rounded-full border border-brandOrange/20 shadow-sm mt-1 mb-1 w-fit"><span class="w-1.5 h-1.5 rounded-full bg-brandOrange shadow-[0_0_8px_#f7941d]"></span>RECORDED</span>`;
+                    liveStatusLabel = `<span class="${neutralLabelBase}">RECORDED</span>`;
                 }
             }
 
