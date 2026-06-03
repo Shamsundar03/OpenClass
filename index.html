@@ -106,7 +106,7 @@
 <body class="selection:bg-brandOrange/30">
     <div id="toast-box"></div>
 
-    <div id="custom-modal" class="hidden fixed inset-0 z-[2500] bg-black/95 backdrop-blur-md flex items-center justify-center p-6 transition-opacity duration-300">
+    <div id="custom-modal" class="hidden fixed inset-0 z-[7000] bg-black/95 backdrop-blur-md flex items-center justify-center p-6 transition-opacity duration-300">
         <div class="absolute top-6 left-6 text-white/50 cursor-pointer hover:text-white font-bold flex items-center gap-2 select-none" onclick="closeCustomModal()">← BACK</div>
         <div id="modal-content" class="w-full max-w-xl glass p-8 md:p-10 rounded-[3rem] border border-brandOrange/20 shadow-2xl overflow-y-auto max-h-[90vh]"></div>
     </div>
@@ -1174,6 +1174,9 @@
         };
 
         window.manageGroupRoster = async (groupId, groupName) => {
+            // Hide the group chat window so the modal is visible
+            document.getElementById('group-chat-window').classList.add('hidden'); 
+            
             const modal = document.getElementById('custom-modal');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
