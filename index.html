@@ -321,7 +321,6 @@
         </div>
     </div>
 
-    <!-- FULL SCREEN ADMIN DASHBOARD -->
     <div id="admin-dashboard" class="hidden fixed inset-0 bg-[var(--bg-main)] z-[9999] fade-in flex flex-col">
         <div class="w-full h-full p-6 md:p-10 overflow-hidden flex flex-col text-[var(--text-main)]">
             
@@ -1435,13 +1434,10 @@
             currentTab = t;
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tab-${t}`)?.classList.add('active');
-            
             window.loadHome();
-            
-            // --- NEW: Trigger the smart badge check after tab switches ---
             if(typeof window.updateRequestsBadge === 'function') window.updateRequestsBadge();
         };
-        
+
         window.reactiveSearch = (val) => { if (val.length < 2) return; navigate('search', val); };
         window.onpopstate = (e) => { if (profile) renderContent(e.state?.p || 'home', e.state?.q || ''); };
         window.navigate = (p, q = '') => { history.pushState({ p, q }, '', `#${p}`); renderContent(p, q); };
@@ -1453,7 +1449,6 @@
             else if (p === 'profile') viewTeacher(q);
         }
 
-        // Analytics Card Handlers
         window.showAnalyticsModal = async (type) => {
             const modal = document.getElementById('custom-modal');
             const content = document.getElementById('modal-content');
@@ -1529,7 +1524,6 @@
             if (!profile) return;
             updateCartPill();
 
-            // 1. Check Teacher Plan Lock
             if (profile.role === 'teacher' && profile.planExpiresAt) {
                 if (new Date() > new Date(profile.planExpiresAt.seconds * 1000)) {
                     main.innerHTML = `<div class="glass p-10 rounded-[3rem] text-center border border-red-500/30 fade-in shadow-2xl">
@@ -1541,7 +1535,6 @@
                 }
             }
 
-            // 2. Dynamic Institute Branding & Filtering Rules
             let targetInstitute = null;
             if (profile.instituteId) {
                 const iSnap = await Core.getDocs(Core.query(Core.collection(Core.db, "institutes"), Core.where("uniqueId", "==", profile.instituteId)));
@@ -1549,7 +1542,6 @@
                     targetInstitute = iSnap.docs[0].data();
                     currentInstituteMap[targetInstitute.uniqueId] = targetInstitute;
                     
-                    // Update Branding
                     const navBlock = document.getElementById('nav-branding-block');
                     if (navBlock) {
                         navBlock.innerHTML = `
@@ -1558,7 +1550,6 @@
                         `;
                     }
 
-                    // Inherit rules for teachers
                     if (profile.role === 'teacher') {
                         profile.privacyMode = targetInstitute.privacyMode || profile.privacyMode;
                     }
@@ -2397,18 +2388,14 @@
             }
 
             return `<div class="flex flex-col group cursor-pointer w-full" onclick="openResource('${d.id}','${i.url}','${i.title}')">
-                <!-- Thumbnail -->
                 <div class="relative w-full aspect-video rounded-2xl overflow-hidden shadow-md border border-[var(--border-color)] bg-zinc-950 mb-3 group-hover:shadow-lg group-hover:border-brandOrange/50 transition-all group-hover:scale-[1.02]">
                     <img src="${window.getSmartPreview(i.url)}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
                     ${window.getFileBadge(i.url)}
                 </div>
                 
-                <!-- Metadata -->
                 <div class="flex gap-3 px-1">
-                    <!-- Avatar -->
                     <img src="${avatarSrc}" class="w-9 h-9 rounded-full object-cover shrink-0 border border-[var(--border-color)] bg-black shadow-sm mt-0.5">
                     
-                    <!-- Text Info -->
                     <div class="flex flex-col flex-1 min-w-0">
                         <h4 class="font-bold text-sm md:text-base text-[var(--text-main)] leading-snug line-clamp-2 break-words group-hover:text-brandOrange transition-colors">${i.title}</h4>
                         ${liveStatusLabel}
@@ -2421,7 +2408,6 @@
                             </div>
                         </div>
                         
-                        <!-- Actions -->
                         ${isT ? `<div class="flex gap-2 mt-3 w-full" onclick="event.stopPropagation()">
                             <button onclick="editR('${d.id}','${i.title}','${i.url}')" class="flex-1 p-2 bg-[var(--input-bg)] text-[var(--text-main)] rounded-xl hover:text-brandBlue hover:border-brandBlue transition-all border border-[var(--border-color)] shadow-sm text-xs font-bold">Edit</button>
                             <button onclick="delR('${d.id}')" class="flex-1 p-2 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all border border-red-500/20 shadow-sm text-xs font-bold">Delete</button>
@@ -2723,16 +2709,10 @@
             const totalPending = (profile.pendingSubs?.length || 0) + (window._teacherPendingGroups || 0);
             
             if(totalPending > 0) {
-                // Always show the inner requests button dot if there are requests
                 if(badge) badge.classList.remove('hidden');
-                
-                // ONLY show the bottom nav dot if we are NOT on the dashboard tab
                 if(navBadge) {
-                    if (currentTab === 'content') {
-                        navBadge.classList.add('hidden');
-                    } else {
-                        navBadge.classList.remove('hidden');
-                    }
+                    if (currentTab === 'content') navBadge.classList.add('hidden');
+                    else navBadge.classList.remove('hidden');
                 }
             } else {
                 if(badge) badge.classList.add('hidden');
@@ -2771,6 +2751,22 @@
                 });
             }
             
+            if (profile.role === 'teacher') {
+                Core.onSnapshot(Core.doc(Core.db, "users", Core.auth.currentUser.uid), (docSnap) => {
+                    if (docSnap.exists()) {
+                        profile.pendingSubs = docSnap.data().pendingSubs || [];
+                        window.updateRequestsBadge();
+                    }
+                });
+
+                Core.onSnapshot(Core.query(Core.collection(Core.db, "groups"), Core.where("teacherId", "==", profile.teacherId)), (snap) => {
+                    window._teacherPendingGroups = 0;
+                    snap.forEach(g => {
+                        window._teacherPendingGroups += (g.data().pending?.length || 0);
+                    });
+                    window.updateRequestsBadge();
+                });
+            }
         }
 
         function updateNotificationUIBadge(gid) {
