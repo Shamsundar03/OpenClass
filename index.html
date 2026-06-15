@@ -266,7 +266,7 @@
                     <button id="tab-home" onclick="setTab('home')" class="tab-btn active transition-transform hover:scale-105">Home</button>
                     <button id="tab-groups" onclick="setTab('groups')" class="tab-btn transition-transform hover:scale-105">Groups</button>
                     <button id="tab-courses" onclick="setTab('courses')" class="tab-btn transition-transform hover:scale-105">Courses</button>
-                    <button id="tab-content" onclick="setTab('content')" class="tab-btn transition-transform hover:scale-105 relative"><span id="tab-content-label">Content</span><span id="nav-req-badge" class="hidden absolute top-2 right-[20%] w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_red]"></span></button>
+                    <button id="tab-content" onclick="setTab('content')" class="tab-btn transition-transform hover:scale-105">Content</button>
                 </div>
             </div>
         </div>
@@ -321,6 +321,7 @@
         </div>
     </div>
 
+    <!-- FULL SCREEN ADMIN DASHBOARD -->
     <div id="admin-dashboard" class="hidden fixed inset-0 bg-[var(--bg-main)] z-[9999] fade-in flex flex-col">
         <div class="w-full h-full p-6 md:p-10 overflow-hidden flex flex-col text-[var(--text-main)]">
             
@@ -1435,7 +1436,6 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tab-${t}`)?.classList.add('active');
             window.loadHome();
-            if(typeof window.updateRequestsBadge === 'function') window.updateRequestsBadge();
         };
 
         window.reactiveSearch = (val) => { if (val.length < 2) return; navigate('search', val); };
@@ -1449,6 +1449,7 @@
             else if (p === 'profile') viewTeacher(q);
         }
 
+        // Analytics Card Handlers
         window.showAnalyticsModal = async (type) => {
             const modal = document.getElementById('custom-modal');
             const content = document.getElementById('modal-content');
@@ -1524,6 +1525,7 @@
             if (!profile) return;
             updateCartPill();
 
+            // 1. Check Teacher Plan Lock
             if (profile.role === 'teacher' && profile.planExpiresAt) {
                 if (new Date() > new Date(profile.planExpiresAt.seconds * 1000)) {
                     main.innerHTML = `<div class="glass p-10 rounded-[3rem] text-center border border-red-500/30 fade-in shadow-2xl">
@@ -1535,6 +1537,7 @@
                 }
             }
 
+            // 2. Dynamic Institute Branding & Filtering Rules
             let targetInstitute = null;
             if (profile.instituteId) {
                 const iSnap = await Core.getDocs(Core.query(Core.collection(Core.db, "institutes"), Core.where("uniqueId", "==", profile.instituteId)));
@@ -1542,6 +1545,7 @@
                     targetInstitute = iSnap.docs[0].data();
                     currentInstituteMap[targetInstitute.uniqueId] = targetInstitute;
                     
+                    // Update Branding
                     const navBlock = document.getElementById('nav-branding-block');
                     if (navBlock) {
                         navBlock.innerHTML = `
@@ -1550,6 +1554,7 @@
                         `;
                     }
 
+                    // Inherit rules for teachers
                     if (profile.role === 'teacher') {
                         profile.privacyMode = targetInstitute.privacyMode || profile.privacyMode;
                     }
@@ -1558,12 +1563,10 @@
             
             if (profile.role === 'teacher' || profile.role === 'super_admin') {
                 document.getElementById('tab-home').innerText = 'Analytics';
-                if(document.getElementById('tab-content-label')) document.getElementById('tab-content-label').innerText = 'Dashboard';
-                else document.getElementById('tab-content').innerText = 'Dashboard';
+                document.getElementById('tab-content').innerText = 'Dashboard';
             } else {
                 document.getElementById('tab-home').innerText = 'Home';
-                if(document.getElementById('tab-content-label')) document.getElementById('tab-content-label').innerText = 'Content';
-                else document.getElementById('tab-content').innerText = 'Content';
+                document.getElementById('tab-content').innerText = 'Content';
             }
 
             if (profile.role === 'teacher' || profile.role === 'super_admin') {
@@ -2388,14 +2391,18 @@
             }
 
             return `<div class="flex flex-col group cursor-pointer w-full" onclick="openResource('${d.id}','${i.url}','${i.title}')">
+                <!-- Thumbnail -->
                 <div class="relative w-full aspect-video rounded-2xl overflow-hidden shadow-md border border-[var(--border-color)] bg-zinc-950 mb-3 group-hover:shadow-lg group-hover:border-brandOrange/50 transition-all group-hover:scale-[1.02]">
                     <img src="${window.getSmartPreview(i.url)}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
                     ${window.getFileBadge(i.url)}
                 </div>
                 
+                <!-- Metadata -->
                 <div class="flex gap-3 px-1">
+                    <!-- Avatar -->
                     <img src="${avatarSrc}" class="w-9 h-9 rounded-full object-cover shrink-0 border border-[var(--border-color)] bg-black shadow-sm mt-0.5">
                     
+                    <!-- Text Info -->
                     <div class="flex flex-col flex-1 min-w-0">
                         <h4 class="font-bold text-sm md:text-base text-[var(--text-main)] leading-snug line-clamp-2 break-words group-hover:text-brandOrange transition-colors">${i.title}</h4>
                         ${liveStatusLabel}
@@ -2408,6 +2415,7 @@
                             </div>
                         </div>
                         
+                        <!-- Actions -->
                         ${isT ? `<div class="flex gap-2 mt-3 w-full" onclick="event.stopPropagation()">
                             <button onclick="editR('${d.id}','${i.title}','${i.url}')" class="flex-1 p-2 bg-[var(--input-bg)] text-[var(--text-main)] rounded-xl hover:text-brandBlue hover:border-brandBlue transition-all border border-[var(--border-color)] shadow-sm text-xs font-bold">Edit</button>
                             <button onclick="delR('${d.id}')" class="flex-1 p-2 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all border border-red-500/20 shadow-sm text-xs font-bold">Delete</button>
@@ -2705,19 +2713,10 @@
 
         window.updateRequestsBadge = () => {
             const badge = document.getElementById('req-badge');
-            const navBadge = document.getElementById('nav-req-badge');
+            if(!badge) return;
             const totalPending = (profile.pendingSubs?.length || 0) + (window._teacherPendingGroups || 0);
-            
-            if(totalPending > 0) {
-                if(badge) badge.classList.remove('hidden');
-                if(navBadge) {
-                    if (currentTab === 'content') navBadge.classList.add('hidden');
-                    else navBadge.classList.remove('hidden');
-                }
-            } else {
-                if(badge) badge.classList.add('hidden');
-                if(navBadge) navBadge.classList.add('hidden');
-            }
+            if(totalPending > 0) badge.classList.remove('hidden');
+            else badge.classList.add('hidden');
         };
 
         function listenSystemEvents() {
@@ -2750,7 +2749,7 @@
                     });
                 });
             }
-            
+            // --- NEW: Track pending requests for teachers ---
             if (profile.role === 'teacher') {
                 Core.onSnapshot(Core.doc(Core.db, "users", Core.auth.currentUser.uid), (docSnap) => {
                     if (docSnap.exists()) {
