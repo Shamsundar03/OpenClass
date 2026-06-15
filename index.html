@@ -1436,12 +1436,12 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tab-${t}`)?.classList.add('active');
             
-            // --- NEW: Instantly remove the red dot when they click the Dashboard tab ---
-            if (t === 'content') document.getElementById('nav-req-badge')?.classList.add('hidden');
-            
             window.loadHome();
+            
+            // --- NEW: Trigger the smart badge check after tab switches ---
+            if(typeof window.updateRequestsBadge === 'function') window.updateRequestsBadge();
         };
-
+        
         window.reactiveSearch = (val) => { if (val.length < 2) return; navigate('search', val); };
         window.onpopstate = (e) => { if (profile) renderContent(e.state?.p || 'home', e.state?.q || ''); };
         window.navigate = (p, q = '') => { history.pushState({ p, q }, '', `#${p}`); renderContent(p, q); };
@@ -2723,8 +2723,17 @@
             const totalPending = (profile.pendingSubs?.length || 0) + (window._teacherPendingGroups || 0);
             
             if(totalPending > 0) {
+                // Always show the inner requests button dot if there are requests
                 if(badge) badge.classList.remove('hidden');
-                if(navBadge) navBadge.classList.remove('hidden');
+                
+                // ONLY show the bottom nav dot if we are NOT on the dashboard tab
+                if(navBadge) {
+                    if (currentTab === 'content') {
+                        navBadge.classList.add('hidden');
+                    } else {
+                        navBadge.classList.remove('hidden');
+                    }
+                }
             } else {
                 if(badge) badge.classList.add('hidden');
                 if(navBadge) navBadge.classList.add('hidden');
