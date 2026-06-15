@@ -266,7 +266,7 @@
                     <button id="tab-home" onclick="setTab('home')" class="tab-btn active transition-transform hover:scale-105">Home</button>
                     <button id="tab-groups" onclick="setTab('groups')" class="tab-btn transition-transform hover:scale-105">Groups</button>
                     <button id="tab-courses" onclick="setTab('courses')" class="tab-btn transition-transform hover:scale-105">Courses</button>
-                    <button id="tab-content" onclick="setTab('content')" class="tab-btn transition-transform hover:scale-105">Content</button>
+                    <button id="tab-content" onclick="setTab('content')" class="tab-btn transition-transform hover:scale-105 relative"><span id="tab-content-label">Content</span><span id="nav-req-badge" class="hidden absolute top-2 right-[20%] w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_red]"></span></button>
                 </div>
             </div>
         </div>
@@ -1435,6 +1435,10 @@
             currentTab = t;
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tab-${t}`)?.classList.add('active');
+            
+            // --- NEW: Instantly remove the red dot when they click the Dashboard tab ---
+            if (t === 'content') document.getElementById('nav-req-badge')?.classList.add('hidden');
+            
             window.loadHome();
         };
 
@@ -1563,10 +1567,12 @@
             
             if (profile.role === 'teacher' || profile.role === 'super_admin') {
                 document.getElementById('tab-home').innerText = 'Analytics';
-                document.getElementById('tab-content').innerText = 'Dashboard';
+                if(document.getElementById('tab-content-label')) document.getElementById('tab-content-label').innerText = 'Dashboard';
+                else document.getElementById('tab-content').innerText = 'Dashboard';
             } else {
                 document.getElementById('tab-home').innerText = 'Home';
-                document.getElementById('tab-content').innerText = 'Content';
+                if(document.getElementById('tab-content-label')) document.getElementById('tab-content-label').innerText = 'Content';
+                else document.getElementById('tab-content').innerText = 'Content';
             }
 
             if (profile.role === 'teacher' || profile.role === 'super_admin') {
@@ -2713,10 +2719,16 @@
 
         window.updateRequestsBadge = () => {
             const badge = document.getElementById('req-badge');
-            if(!badge) return;
+            const navBadge = document.getElementById('nav-req-badge');
             const totalPending = (profile.pendingSubs?.length || 0) + (window._teacherPendingGroups || 0);
-            if(totalPending > 0) badge.classList.remove('hidden');
-            else badge.classList.add('hidden');
+            
+            if(totalPending > 0) {
+                if(badge) badge.classList.remove('hidden');
+                if(navBadge) navBadge.classList.remove('hidden');
+            } else {
+                if(badge) badge.classList.add('hidden');
+                if(navBadge) navBadge.classList.add('hidden');
+            }
         };
 
         function listenSystemEvents() {
@@ -2749,23 +2761,7 @@
                     });
                 });
             }
-            // --- NEW: Track pending requests for teachers ---
-            if (profile.role === 'teacher') {
-                Core.onSnapshot(Core.doc(Core.db, "users", Core.auth.currentUser.uid), (docSnap) => {
-                    if (docSnap.exists()) {
-                        profile.pendingSubs = docSnap.data().pendingSubs || [];
-                        window.updateRequestsBadge();
-                    }
-                });
-
-                Core.onSnapshot(Core.query(Core.collection(Core.db, "groups"), Core.where("teacherId", "==", profile.teacherId)), (snap) => {
-                    window._teacherPendingGroups = 0;
-                    snap.forEach(g => {
-                        window._teacherPendingGroups += (g.data().pending?.length || 0);
-                    });
-                    window.updateRequestsBadge();
-                });
-            }
+            
         }
 
         function updateNotificationUIBadge(gid) {
