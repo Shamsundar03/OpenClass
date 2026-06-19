@@ -469,7 +469,7 @@
                 ]
             };
             
-            // Use a Blob URL instead of a base64 Data URI (Much more reliable for PWAs)
+            // Use Blob for reliable PWA manifest injection
             const stringManifest = JSON.stringify(manifest);
             const blob = new Blob([stringManifest], { type: 'application/json' });
             const manifestUrl = URL.createObjectURL(blob);
@@ -480,10 +480,11 @@
                 console.log("Custom manifest injected:", manifestUrl);
             }
         };
-window.triggerInstAppInstall = async (btnOrInstId, optionalInstId) => {
-            // Support passing the button element to show the countdown
+
+        window.triggerInstAppInstall = async (btnOrInstId, optionalInstId) => {
             let btn = null;
             let instId = btnOrInstId;
+            
             if (typeof btnOrInstId === 'object' && btnOrInstId.tagName) {
                 btn = btnOrInstId;
                 instId = optionalInstId;
@@ -491,51 +492,74 @@ window.triggerInstAppInstall = async (btnOrInstId, optionalInstId) => {
 
             if (btn && btn.disabled) return;
 
-            // 1. Fetch data and set the manifest IMMEDIATELY
+            // Phase 2: User clicks "INSTALL NOW" after the timer
+            if (btn && btn.dataset.phase === "ready") {
+                if (window.deferredPrompt) {
+                    window.deferredPrompt.prompt();
+                    window.deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            toast("Installing Institute App...");
+                        }
+                        window.deferredPrompt = null;
+                        
+                        // Reset button back to normal
+                        btn.dataset.phase = "start";
+                        btn.innerText = "Get App";
+                        btn.classList.remove('bg-brandOrange', 'text-white', 'border-brandOrange');
+                        btn.classList.add('bg-green-500/10', 'text-green-500', 'border-green-500/20');
+                    });
+                } else {
+                    toast("Ready! Use your browser menu -> 'Install' or 'Add to Home Screen'");
+                }
+                return;
+            }
+
+            // Phase 1: User clicks "Get App" - Start Manifest Build
             const instData = await window.getInstBadgeData(instId);
             if(!instData) return toast("Institute not found", "error");
+            
+            // Inject the new manifest
             window.setDynamicManifest(instData);
             
-            // 2. Start the 5-second countdown to let the browser catch the new manifest
             let timeLeft = 5;
-            let originalText = "Get App";
             if (btn) {
-                originalText = btn.innerText;
                 btn.disabled = true;
+                btn.dataset.phase = "building";
                 btn.classList.add('opacity-50', 'cursor-not-allowed');
-                btn.innerText = `WAIT ${timeLeft}S`;
+                btn.innerText = `BUILDING ${timeLeft}s`;
             } else {
                 toast("Generating custom app file... please wait 5s");
             }
 
+            // Start countdown
             const timer = setInterval(() => {
                 timeLeft--;
-                if (btn) btn.innerText = `WAIT ${timeLeft}S`;
+                if (btn) btn.innerText = `BUILDING ${timeLeft}s`;
                 
                 if (timeLeft <= 0) {
                     clearInterval(timer);
                     if (btn) {
-                        btn.innerText = originalText;
+                        // Change button to active INSTALL state
                         btn.disabled = false;
                         btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    }
-                    
-                    // 3. Trigger the prompt NOW that the browser has the correct manifest
-                    if (window.deferredPrompt) {
-                        window.deferredPrompt.prompt();
-                        window.deferredPrompt.userChoice.then((choiceResult) => {
-                            if (choiceResult.outcome === 'accepted') {
-                                toast("Installing Institute App...");
-                            }
-                            window.deferredPrompt = null;
-                        });
+                        
+                        // Swap colors to Orange to show it's ready
+                        btn.classList.remove('bg-green-500/10', 'text-green-500', 'border-green-500/20');
+                        btn.classList.add('bg-brandOrange', 'text-white', 'border-brandOrange');
+                        
+                        btn.innerText = "INSTALL NOW";
+                        btn.dataset.phase = "ready"; // Mark as ready for Phase 2
                     } else {
-                        toast("Ready! Use browser menu -> 'Install' or 'Add to Home Screen'");
+                        // Fallback if no button was passed
+                        if (window.deferredPrompt) {
+                            window.deferredPrompt.prompt();
+                        } else {
+                            toast("Manifest ready! Use browser menu -> 'Install' or 'Add to Home Screen'");
+                        }
                     }
                 }
             }, 1000);
         };
-
         window.applyLockedInstituteBranding = async () => {
             if (window._lockedInstId) {
                 const instData = await window.getInstBadgeData(window._lockedInstId);
