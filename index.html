@@ -138,6 +138,28 @@
 <body class="selection:bg-brandOrange/30">
     <div id="toast-box"></div>
 
+    <div id="pwa-install-overlay" class="hidden fixed inset-0 z-[100000] bg-black/80 backdrop-blur-md flex-col items-center justify-center p-6 transition-opacity duration-500">
+        <div id="pwa-loading-state" class="flex flex-col items-center gap-6 fade-in">
+            <svg class="animate-spin h-16 w-16 text-brandOrange drop-shadow-[0_0_15px_rgba(247,148,29,0.5)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-white font-black tracking-widest uppercase text-sm animate-pulse">Building Custom App...</p>
+        </div>
+        
+        <div id="pwa-ready-state" class="hidden flex-col items-center gap-6 fade-in text-center">
+            <div class="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(34,197,94,0.4)] mb-2">
+                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <h3 class="text-3xl font-black text-white uppercase tracking-widest italic">App Ready</h3>
+            <p class="text-sm text-white/60 mb-4">Your personalized campus application has been compiled.</p>
+            <button id="pwa-final-install-btn" class="w-full sm:w-auto bg-brandOrange hover:bg-[#e0861a] text-white px-12 py-5 rounded-2xl font-black uppercase tracking-widest shadow-[0_15px_35px_rgba(247,148,29,0.4)] hover:scale-105 transition-all text-base">
+                Install Now
+            </button>
+            <button onclick="document.getElementById('pwa-install-overlay').classList.add('hidden'); document.getElementById('pwa-install-overlay').classList.remove('flex');" class="mt-4 text-[10px] text-white/40 font-bold uppercase tracking-widest hover:text-white transition-colors">Cancel Installation</button>
+        </div>
+    </div>
+
     <div id="custom-modal" class="hidden fixed inset-0 z-[10000] bg-black/95 backdrop-blur-md flex items-center justify-center p-6 transition-opacity duration-300">
         <div class="absolute top-6 left-6 text-white/50 cursor-pointer hover:text-white font-bold flex items-center gap-2 select-none transition-transform hover:-translate-x-1" onclick="closeCustomModal()">← BACK</div>
         <div id="modal-content" class="w-full max-w-xl glass p-8 md:p-10 rounded-[3rem] border border-brandOrange/20 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar"></div>
@@ -482,84 +504,59 @@
         };
 
         window.triggerInstAppInstall = async (btnOrInstId, optionalInstId) => {
-            let btn = null;
-            let instId = btnOrInstId;
-            
-            if (typeof btnOrInstId === 'object' && btnOrInstId.tagName) {
-                btn = btnOrInstId;
-                instId = optionalInstId;
-            }
+            let instId = typeof btnOrInstId === 'object' && btnOrInstId.tagName ? optionalInstId : btnOrInstId;
 
-            if (btn && btn.disabled) return;
-
-            // Phase 2: User clicks "INSTALL NOW" after the timer
-            if (btn && btn.dataset.phase === "ready") {
-                if (window.deferredPrompt) {
-                    window.deferredPrompt.prompt();
-                    window.deferredPrompt.userChoice.then((choiceResult) => {
-                        if (choiceResult.outcome === 'accepted') {
-                            toast("Installing Institute App...");
-                        }
-                        window.deferredPrompt = null;
-                        
-                        // Reset button back to normal
-                        btn.dataset.phase = "start";
-                        btn.innerText = "Get App";
-                        btn.classList.remove('bg-brandOrange', 'text-white', 'border-brandOrange');
-                        btn.classList.add('bg-green-500/10', 'text-green-500', 'border-green-500/20');
-                    });
-                } else {
-                    toast("Ready! Use your browser menu -> 'Install' or 'Add to Home Screen'");
-                }
-                return;
-            }
-
-            // Phase 1: User clicks "Get App" - Start Manifest Build
+            // 1. Fetch data and set the manifest IMMEDIATELY
             const instData = await window.getInstBadgeData(instId);
             if(!instData) return toast("Institute not found", "error");
-            
-            // Inject the new manifest
             window.setDynamicManifest(instData);
             
-            let timeLeft = 5;
-            if (btn) {
-                btn.disabled = true;
-                btn.dataset.phase = "building";
-                btn.classList.add('opacity-50', 'cursor-not-allowed');
-                btn.innerText = `BUILDING ${timeLeft}s`;
-            } else {
-                toast("Generating custom app file... please wait 5s");
-            }
+            // 2. Fetch Overlay Elements
+            const overlay = document.getElementById('pwa-install-overlay');
+            const loadState = document.getElementById('pwa-loading-state');
+            const readyState = document.getElementById('pwa-ready-state');
+            const finalBtn = document.getElementById('pwa-final-install-btn');
 
-            // Start countdown
-            const timer = setInterval(() => {
-                timeLeft--;
-                if (btn) btn.innerText = `BUILDING ${timeLeft}s`;
+            // 3. Show Loading Screen (Blurred Background)
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            
+            loadState.classList.remove('hidden');
+            loadState.classList.add('flex');
+            
+            readyState.classList.add('hidden');
+            readyState.classList.remove('flex');
+
+            // 4. Wait exactly 5 seconds silently in the background
+            setTimeout(() => {
+                // Hide loader, show the "Install Now" UI
+                loadState.classList.add('hidden');
+                loadState.classList.remove('flex');
                 
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    if (btn) {
-                        // Change button to active INSTALL state
-                        btn.disabled = false;
-                        btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                        
-                        // Swap colors to Orange to show it's ready
-                        btn.classList.remove('bg-green-500/10', 'text-green-500', 'border-green-500/20');
-                        btn.classList.add('bg-brandOrange', 'text-white', 'border-brandOrange');
-                        
-                        btn.innerText = "INSTALL NOW";
-                        btn.dataset.phase = "ready"; // Mark as ready for Phase 2
+                readyState.classList.remove('hidden');
+                readyState.classList.add('flex');
+
+                // 5. Attach the browser prompt to the new INSTALL NOW button
+                finalBtn.onclick = () => {
+                    if (window.deferredPrompt) {
+                        window.deferredPrompt.prompt();
+                        window.deferredPrompt.userChoice.then((choiceResult) => {
+                            if (choiceResult.outcome === 'accepted') {
+                                toast("Installing Institute App...");
+                            }
+                            window.deferredPrompt = null;
+                            overlay.classList.add('hidden');
+                            overlay.classList.remove('flex');
+                        });
                     } else {
-                        // Fallback if no button was passed
-                        if (window.deferredPrompt) {
-                            window.deferredPrompt.prompt();
-                        } else {
-                            toast("Manifest ready! Use browser menu -> 'Install' or 'Add to Home Screen'");
-                        }
+                        toast("Ready! Use your browser menu -> 'Install' or 'Add to Home Screen'");
+                        overlay.classList.add('hidden');
+                        overlay.classList.remove('flex');
                     }
-                }
-            }, 1000);
+                };
+            }, 5000); // 5000ms = 5 Seconds
         };
+
         window.applyLockedInstituteBranding = async () => {
             if (window._lockedInstId) {
                 const instData = await window.getInstBadgeData(window._lockedInstId);
