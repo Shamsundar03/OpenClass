@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <link id="app-manifest" rel="manifest" href="">
+    <link id="app-manifest" rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#050505">
     
     <script>
@@ -468,12 +468,18 @@
                     { src: instData.logo || 'https://res.cloudinary.com/dowhvdkjh/image/upload/v1780123661/Icon_cpp9wz.png', sizes: "512x512", type: "image/png", purpose: "any" }
                 ]
             };
+            
+            // Use a Blob URL instead of a base64 Data URI (Much more reliable for PWAs)
             const stringManifest = JSON.stringify(manifest);
-            const base64Manifest = 'data:application/json;charset=utf-8,' + encodeURIComponent(stringManifest);
+            const blob = new Blob([stringManifest], { type: 'application/json' });
+            const manifestUrl = URL.createObjectURL(blob);
+            
             const link = document.getElementById('app-manifest');
-            if (link) link.href = base64Manifest;
+            if (link) {
+                link.href = manifestUrl;
+                console.log("Custom manifest injected:", manifestUrl);
+            }
         };
-
 window.triggerInstAppInstall = async (btnOrInstId, optionalInstId) => {
             // Support passing the button element to show the countdown
             let btn = null;
