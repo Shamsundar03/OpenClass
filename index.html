@@ -377,32 +377,12 @@
                 </div>
 
                 <div id="institutes-section" class="admin-section hidden space-y-4 max-w-4xl mx-auto fade-in">
-                    <h2 class="text-2xl font-black italic text-purple-400 mb-6">Institute Registry</h2>
-                    <div class="grid md:grid-cols-2 gap-8">
-                        <div class="space-y-4 bg-[var(--input-bg)] p-6 rounded-3xl border border-[var(--border-color)]">
-                            <h3 class="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-4">Node Configuration</h3>
-                            <input id="inst-teacher-id" type="text" placeholder="Teacher's Owner ID" class="input-field">
-                            <input id="inst-name" type="text" placeholder="Institute Name" class="input-field">
-                            <input id="inst-logo" type="text" placeholder="Logo URL" class="input-field">
-                            <select id="inst-privacy" class="input-field">
-                                <option value="public">Public Content</option>
-                                <option value="private">Private (Gated)</option>
-                            </select>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="text-[9px] uppercase opacity-50 ml-2">Plan Start</label>
-                                    <input id="inst-start" type="date" class="input-field mt-1">
-                                </div>
-                                <div>
-                                    <label class="text-[9px] uppercase opacity-50 ml-2">Plan End</label>
-                                    <input id="inst-end" type="date" class="input-field mt-1">
-                                </div>
-                            </div>
-                            <button id="inst-action-btn" onclick="window.processInstituteSave()" class="w-full py-4 bg-purple-600 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-lg hover:bg-purple-700 hover:scale-[1.02] transition-all mt-4">Generate & Register Node</button>
-                        </div>
-                        <div>
-                            <div id="institutes-list" class="space-y-2"></div>
-                        </div>
+                    <div class="flex justify-between items-center mb-6 border-b border-[var(--border-color)] pb-4">
+                        <h2 class="text-2xl font-black italic text-purple-400">Institute Registry</h2>
+                        <button onclick="window.openAdminInstituteModal()" class="bg-purple-500 hover:bg-purple-600 text-white w-10 h-10 rounded-full flex items-center justify-center font-black text-xl shadow-lg transition-transform hover:scale-110">+</button>
+                    </div>
+                    <div>
+                        <div id="institutes-list" class="space-y-2"></div>
                     </div>
                 </div>
 
@@ -491,6 +471,7 @@
                 ]
             };
             
+            // Use Blob for reliable PWA manifest injection
             const stringManifest = JSON.stringify(manifest);
             const blob = new Blob([stringManifest], { type: 'application/json' });
             const manifestUrl = URL.createObjectURL(blob);
@@ -1185,6 +1166,37 @@
             window.showSection('plans-section');
         };
 
+        window.openAdminInstituteModal = () => {
+            const modal = document.getElementById('custom-modal');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+            content.innerHTML = `
+                <div class="fade-in space-y-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-2xl font-black uppercase tracking-widest text-purple-400 italic">Node Configuration</h3>
+                    </div>
+                    <input id="inst-teacher-id" type="text" placeholder="Teacher's Owner ID" class="input-field">
+                    <input id="inst-name" type="text" placeholder="Institute Name" class="input-field">
+                    <input id="inst-logo" type="text" placeholder="Logo URL" class="input-field">
+                    <select id="inst-privacy" class="input-field">
+                        <option value="public">Public Content</option>
+                        <option value="private">Private (Gated)</option>
+                    </select>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[9px] uppercase opacity-50 ml-2">Plan Start</label>
+                            <input id="inst-start" type="date" class="input-field mt-1">
+                        </div>
+                        <div>
+                            <label class="text-[9px] uppercase opacity-50 ml-2">Plan End</label>
+                            <input id="inst-end" type="date" class="input-field mt-1">
+                        </div>
+                    </div>
+                    <button id="inst-action-btn" onclick="window.processInstituteSave()" class="w-full py-4 bg-purple-600 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-lg hover:bg-purple-700 hover:scale-[1.02] transition-all mt-4">Generate & Register Node</button>
+                </div>
+            `;
+        };
+
         window.loadAdminInstitutes = async () => {
             const container = document.getElementById('institutes-list');
             if(!container) return;
@@ -1268,16 +1280,13 @@
                 });
 
                 toast(`Institute created! ID: ${uniqueId}`);
-                document.getElementById('inst-teacher-id').value = '';
-                document.getElementById('inst-name').value = '';
-                document.getElementById('inst-logo').value = '';
-                
+                window.closeCustomModal();
                 window.loadAdminInstitutes();
             } catch(e) {
                 console.error(e);
                 toast("Failed to create institute", "error");
             } finally {
-                btn.innerText = "Generate & Register Node"; btn.disabled = false;
+                if(btn) { btn.innerText = "Generate & Register Node"; btn.disabled = false; }
             }
         };
 
