@@ -491,7 +491,6 @@
                 ]
             };
             
-            // Use Blob for reliable PWA manifest injection
             const stringManifest = JSON.stringify(manifest);
             const blob = new Blob([stringManifest], { type: 'application/json' });
             const manifestUrl = URL.createObjectURL(blob);
@@ -523,7 +522,6 @@
             
             loadState.classList.remove('hidden');
             loadState.classList.add('flex');
-            
             readyState.classList.add('hidden');
             readyState.classList.remove('flex');
 
@@ -2390,6 +2388,89 @@
             document.getElementById('course-vids').appendChild(div);
         };
 
+        window.editCourse = async (id) => {
+            const snap = await Core.getDoc(Core.doc(Core.db, "courses", id));
+            if (!snap.exists()) return toast("Course not found", "error");
+            const c = snap.data();
+            
+            const modal = document.getElementById('custom-modal');
+            const content = document.getElementById('modal-content');
+            toggleBottomNavBarVisibility(false);
+            modal.classList.remove('hidden');
+
+            let playlistHtml = '';
+            c.playlist.forEach((vid, index) => {
+                playlistHtml += `<div class="flex gap-2 mb-2 fade-in course-edit-vid-row">
+                    <input placeholder="Lecture Title" value="${vid.title}" class="input-field text-xs p-3 cv-ed-t transition-colors">
+                    <input placeholder="Video URL" value="${vid.url}" class="input-field text-xs p-3 cv-ed-u transition-colors">
+                    <button onclick="this.parentElement.remove()" class="bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all px-4 rounded-xl font-black shadow-sm text-sm hover:scale-105">✕</button>
+                </div>`;
+            });
+
+            content.innerHTML = `
+                <div class="fade-in">
+                    <h3 class="text-2xl font-black italic mb-6 text-brandOrange">Edit Course</h3>
+                    <div class="space-y-4">
+                        <input id="ed-c-title" placeholder="Course Title" value="${c.title}" class="input-field text-sm p-4 transition-colors">
+                        <textarea id="ed-c-desc" placeholder="Syllabus Scope & Details" class="input-field h-24 text-sm p-4 transition-colors">${c.description}</textarea>
+                        
+                        <select id="ed-c-tier" onchange="document.getElementById('ed-price-field-wrapper').style.display = this.value==='free'?'none':'block'" class="input-field text-sm p-4 transition-colors">
+                            <option value="paid" ${c.price !== '0' ? 'selected' : ''}>Commercial Tier (Paid)</option>
+                            <option value="free" ${c.price === '0' ? 'selected' : ''}>Open Access Tier (Free)</option>
+                        </select>
+                        <div id="ed-price-field-wrapper" class="mb-4" style="display: ${c.price === '0' ? 'none' : 'block'}">
+                            <input id="ed-c-price" placeholder="Tuition Fee Price ₹" value="${c.price === '0' ? '' : c.price}" class="input-field text-sm p-4 transition-colors">
+                        </div>
+                        
+                        <h4 class="font-black mt-6 mb-2 text-sm uppercase tracking-widest opacity-60">Manage Lectures</h4>
+                        <div id="ed-course-vids" class="space-y-3">
+                            ${playlistHtml}
+                        </div>
+                        <button onclick="addEditVidField()" class="w-full py-3 bg-brandOrange/20 text-brandOrange hover:bg-brandOrange hover:text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all border border-brandOrange/30 shadow-sm hover:scale-[1.01] mt-2">+ Add New Lecture</button>
+                        
+                        <button onclick="saveCourseEdit('${id}')" class="w-full py-4 btn-brand text-xs mt-8 shadow-md hover:scale-[1.02]">Update Course Matrix</button>
+                    </div>
+                </div>
+            `;
+        };
+
+        window.addEditVidField = () => {
+            const div = document.createElement('div'); 
+            div.className = "flex gap-2 mb-2 fade-in course-edit-vid-row";
+            div.innerHTML = `<input placeholder="Lecture Title" class="input-field text-xs p-3 cv-ed-t transition-colors"><input placeholder="Video URL" class="input-field text-xs p-3 cv-ed-u transition-colors"><button onclick="this.parentElement.remove()" class="bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all px-4 rounded-xl font-black shadow-sm text-sm hover:scale-105">✕</button>`;
+            document.getElementById('ed-course-vids').appendChild(div);
+        };
+
+        window.saveCourseEdit = async (id) => {
+            const t = document.getElementById('ed-c-title').value;
+            const d = document.getElementById('ed-c-desc').value;
+            const tier = document.getElementById('ed-c-tier').value;
+            let p = tier === 'free' ? "0" : document.getElementById('ed-c-price').value;
+            
+            const vt = Array.from(document.querySelectorAll('.cv-ed-t')).map(i => i.value);
+            const vu = Array.from(document.querySelectorAll('.cv-ed-u')).map(i => i.value);
+            
+            if (!t || !vu[0] || !vu[0].trim()) return toast("At least one valid lecture is required", "error");
+            
+            const playlist = vt.map((title, i) => ({ title: title || `Lecture ${i+1}`, url: vu[i] })).filter(item => item.url.trim() !== "");
+            
+            try {
+                await Core.updateDoc(Core.doc(Core.db, "courses", id), { 
+                    title: t, 
+                    description: d, 
+                    price: p, 
+                    playlist,
+                    thumbnail: window.getSmartPreview(playlist[0].url)
+                });
+                toast("Course updated successfully");
+                closeCustomModal();
+                window.loadHome();
+            } catch(e) {
+                toast("Failed to update course", "error");
+                console.error(e);
+            }
+        };
+
         window.modReq = async (gid, uid, name, accept, fromModal = false) => { 
             const ref = Core.doc(Core.db, "groups", gid); 
             if(accept) {
@@ -2599,6 +2680,7 @@
             for(let doc of docs) {
                 const c = doc.data();
                 let badgeStr = "";
+                const isOwner = profile && profile.teacherId === c.teacherId;
                 
                 // Fetch Teacher & Institute for Badge
                 const tSnap = await Core.getDocs(Core.query(Core.collection(Core.db, "users"), Core.where("teacherId", "==", c.teacherId)));
@@ -2607,7 +2689,22 @@
                     if(instData) badgeStr = window.renderInstBadgeHtml(instData, 'w-8 h-8 md:w-10 md:h-10 border-2 right-2 bottom-2');
                 }
 
-                html += `<div class="glass p-5 rounded-[2.5rem] border border-[var(--border-color)] flex flex-col justify-between h-auto shadow-md hover:border-brandOrange/30 hover:scale-[1.02] transition-all"><div class="w-full flex items-center justify-center overflow-hidden rounded-2xl mb-5 bg-zinc-950/40 aspect-video shadow-inner relative"><img src="${c.thumbnail}" class="w-full h-full object-cover border border-[var(--border-color)] hover:scale-110 transition-transform duration-500">${badgeStr}</div><div><h2 class="text-xl font-black italic mb-2 truncate pr-4 text-[var(--text-main)]">${c.title}</h2><div class="flex justify-between items-center mt-5"><h3 class="text-lg font-black text-brandOrange drop-shadow-md">₹${c.price === '0' ? 'FREE' : c.price}</h3><button onclick="openCourse('${doc.id}')" class="btn-brand px-6 py-2.5 text-[10px] shadow-sm hover:shadow-brandOrange/40 hover:scale-110">Inspect</button></div></div></div>`;
+                html += `<div class="glass p-5 rounded-[2.5rem] border border-[var(--border-color)] flex flex-col justify-between h-auto shadow-md hover:border-brandOrange/30 hover:scale-[1.02] transition-all">
+                    <div class="w-full flex items-center justify-center overflow-hidden rounded-2xl mb-5 bg-zinc-950/40 aspect-video shadow-inner relative">
+                        <img src="${c.thumbnail}" class="w-full h-full object-cover border border-[var(--border-color)] hover:scale-110 transition-transform duration-500">
+                        ${badgeStr}
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black italic mb-2 truncate pr-4 text-[var(--text-main)]">${c.title}</h2>
+                        <div class="flex justify-between items-center mt-5 w-full">
+                            <h3 class="text-lg font-black text-brandOrange drop-shadow-md">₹${c.price === '0' ? 'FREE' : c.price}</h3>
+                            <div class="flex gap-2">
+                                <button onclick="openCourse('${doc.id}')" class="btn-brand px-6 py-2.5 text-[10px] shadow-sm hover:shadow-brandOrange/40 hover:scale-110">Inspect</button>
+                                ${isOwner ? `<button onclick="editCourse('${doc.id}')" class="bg-[var(--input-bg)] text-[var(--text-main)] border border-[var(--border-color)] px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-brandOrange hover:border-brandOrange hover:text-white transition-all hover:scale-110">Edit</button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
             }
             html += `</div>`;
             container.innerHTML = html;
