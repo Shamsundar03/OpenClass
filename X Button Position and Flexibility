@@ -166,7 +166,7 @@
     </div>
 
     <div id="media-vault" class="hidden fixed inset-0 z-[2000] bg-black flex flex-col md:flex-row items-center justify-center p-2 md:p-4 gap-4 transition-opacity duration-300">
-        <button onclick="closeVault()" class="absolute top-6 right-6 bg-white/10 hover:bg-red-500 text-white w-12 h-12 rounded-full flex items-center justify-center font-black z-[2147483647] shadow-lg backdrop-blur-md hover:scale-110 transition-transform">✕</button>
+        <button id="vault-close-btn" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white/20 hover:bg-red-500 text-white w-14 h-14 rounded-full flex items-center justify-center font-black z-[2147483647] shadow-[0_0_20px_rgba(0,0,0,0.6)] backdrop-blur-md transition-colors cursor-move touch-none border border-white/10">✕</button>
         
         <div id="vault-capture-container" class="w-full max-w-4xl overflow-hidden rounded-2xl shadow-2xl relative flex items-center justify-center flex-grow">
              <div id="vault-wrapper">
@@ -1173,7 +1173,7 @@
             content.innerHTML = `
                 <div class="fade-in space-y-4">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-2xl font-black uppercase tracking-widest text-purple-400 italic">Add Institute</h3>
+                        <h3 class="text-2xl font-black uppercase tracking-widest text-purple-400 italic">Node Configuration</h3>
                     </div>
                     <input id="inst-teacher-id" type="text" placeholder="Teacher's Owner ID" class="input-field">
                     <input id="inst-name" type="text" placeholder="Institute Name" class="input-field">
@@ -1192,7 +1192,7 @@
                             <input id="inst-end" type="date" class="input-field mt-1">
                         </div>
                     </div>
-                    <button id="inst-action-btn" onclick="window.processInstituteSave()" class="w-full py-4 bg-purple-600 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-lg hover:bg-purple-700 hover:scale-[1.02] transition-all mt-4">Register Institute</button>
+                    <button id="inst-action-btn" onclick="window.processInstituteSave()" class="w-full py-4 bg-purple-600 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-lg hover:bg-purple-700 hover:scale-[1.02] transition-all mt-4">Generate & Register Node</button>
                 </div>
             `;
         };
@@ -3202,6 +3202,105 @@
         }
         window.delG = async (id) => { if(confirm("Confirm asset group dissolution?")) { await Core.deleteDoc(Core.doc(Core.db, "groups", id)); window.loadHome(); } };
         window.onclick = (e) => { if (e.target === document.getElementById('custom-modal')) window.closeCustomModal(); };
+
+        // Draggable Vault Close Button Logic
+        window._isDraggingCloseBtn = false;
+        setTimeout(() => {
+            const btn = document.getElementById('vault-close-btn');
+            if (!btn) return;
+            
+            let startX, startY, initialLeft, initialTop;
+            let dragThreshold = false;
+
+            const onDragStart = (e) => {
+                if (e.target !== btn) return;
+                dragThreshold = false;
+                
+                if (e.type === 'touchstart') {
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                } else {
+                    startX = e.clientX;
+                    startY = e.clientY;
+                }
+
+                // Convert Tailwind bottom/left absolute centering to raw px for drag calculation
+                const rect = btn.getBoundingClientRect();
+                // Strip the tailwind centering classes to avoid layout conflicts during drag
+                btn.classList.remove('bottom-8', 'left-1/2', '-translate-x-1/2');
+                
+                // Set fixed inline position exactly where it is currently
+                btn.style.left = rect.left + 'px';
+                btn.style.top = rect.top + 'px';
+                btn.style.bottom = 'auto'; // override bottom
+                btn.style.right = 'auto'; // override right
+                
+                initialLeft = rect.left;
+                initialTop = rect.top;
+
+                document.addEventListener('mousemove', onDragMove, {passive: false});
+                document.addEventListener('mouseup', onDragEnd);
+                document.addEventListener('touchmove', onDragMove, {passive: false});
+                document.addEventListener('touchend', onDragEnd);
+            };
+
+            const onDragMove = (e) => {
+                let currentX, currentY;
+                if (e.type === 'touchmove') {
+                    currentX = e.touches[0].clientX;
+                    currentY = e.touches[0].clientY;
+                } else {
+                    currentX = e.clientX;
+                    currentY = e.clientY;
+                }
+
+                const dx = currentX - startX;
+                const dy = currentY - startY;
+
+                if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                    dragThreshold = true;
+                    window._isDraggingCloseBtn = true;
+                    e.preventDefault(); // prevent scrolling while dragging
+                }
+
+                if (dragThreshold) {
+                    let newLeft = initialLeft + dx;
+                    let newTop = initialTop + dy;
+                    
+                    // Bounds check so it doesn't go off screen
+                    const maxLeft = window.innerWidth - btn.offsetWidth;
+                    const maxTop = window.innerHeight - btn.offsetHeight;
+                    
+                    newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+                    newTop = Math.max(0, Math.min(newTop, maxTop));
+
+                    btn.style.left = newLeft + 'px';
+                    btn.style.top = newTop + 'px';
+                }
+            };
+
+            const onDragEnd = (e) => {
+                document.removeEventListener('mousemove', onDragMove);
+                document.removeEventListener('mouseup', onDragEnd);
+                document.removeEventListener('touchmove', onDragMove);
+                document.removeEventListener('touchend', onDragEnd);
+                
+                setTimeout(() => { window._isDraggingCloseBtn = false; }, 100);
+            };
+
+            btn.addEventListener('mousedown', onDragStart);
+            btn.addEventListener('touchstart', onDragStart, {passive: false});
+            
+            btn.addEventListener('click', (e) => {
+                if (dragThreshold) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dragThreshold = false;
+                    return;
+                }
+                window.closeVault();
+            });
+        }, 1000);
     </script>
 </body>
 </html>
